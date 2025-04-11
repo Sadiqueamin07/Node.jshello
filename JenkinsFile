@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_REPO = "sadiqueaproject/my-app"
+        ECR_REPO_URI = "008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-app"
+        AWS_REGION = "ap-south-1"
+        IMAGE_TAG = "${env.BUILD_ID}"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'Github', url: 'https://github.com/Sadiqueamin07/Node.jshello.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}", "--build-arg DOCKER_BUILDKIT=1 .")
+                    env.DOCKER_IMAGE_ID = dockerImage.id // Store for later use
+                }
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    retry(3) { // Retry on network failures
+                        docker.withRegistry('https://index.docker.io/v1/', 'GitHubDemo') {
+                            def dockerImage = docker.image("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
+                            dockerImage.push()
+                            dockerImage.push('latest')
+                        }
+                    }
+                }
+            }
+        }
+        stage('Push to AWS ECR') {
+            steps {
+                script {
+                    retry(3) { // Retry on network failures
+                        withAWS(credentials: 'AWS', region: "${AWS_REGION}") {
+                            sh """
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
+                            docker tag ${DOCKER_HUB_REPO}:${IMAGE_TAG} ${ECR_REPO_URI}:${IMAGE_TAG}
+                            docker push ${ECR_REPO_URI}:${IMAGE_TAG}
+                            docker tag ${DOCKER_HUB_REPO}:${IMAGE_TAG} ${ECR_REPO_URI}:latest
+                            docker push ${ECR_REPO_URI}:latest
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            sh "docker rmi ${DOCKER_HUB_REPO}:${IMAGE_TAG} || true"
+            sh "docker rmi ${ECR_REPO_URI}:${IMAGE_TAG} || true"
+        }
+    }
+}

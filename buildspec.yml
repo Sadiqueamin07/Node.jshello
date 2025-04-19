@@ -3,7 +3,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $eu-north-1 | docker login --username AWS --password-stdin $008971679675.dkr.ecr.eu-north-1.amazonaws.com/my-app
+      - aws ecr get-login-password --region $ap-south-1 | docker login --username AWS --password-stdin $008971679675.dkr.ecr.eu-north-1.amazonaws.com/myecrapp
   build:
     commands:
       - echo Build started on `date`

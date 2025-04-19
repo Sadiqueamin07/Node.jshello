@@ -3,12 +3,12 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+      - aws ecr get-login-password --region $eu-north-1 | docker login --username AWS --password-stdin $008971679675.dkr.ecr.eu-north-1.amazonaws.com/my-app
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+      - docker build -t $my-app:$latest .
       - docker tag $IMAGE_NAME:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
   post_build:
     commands:

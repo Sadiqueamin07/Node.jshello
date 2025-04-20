@@ -1,19 +1,26 @@
 version: 0.2
 phases:
   pre_build:
-  commands:
-    - echo Logging in to Amazon ECR...
-    - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-app
+    commands:
+      - echo Starting Docker daemon...
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - echo AWS CLI version
+      - aws --version
+      - echo Logging in to Amazon ECR...
+      - set -x
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-app
+      - set +x
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
       - docker build -t my-app .
-      - docker tag my-app:latest $ECR_REGISTRY/my-app:latest
+      - docker tag my-app:latest 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-app:latest
   post_build:
     commands:
       - echo Pushing the Docker image...
-      - docker push $ECR_REGISTRY/my-app:latest
+      - docker push 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-app:latest
       - echo Build completed on `date`
 artifacts:
   files:

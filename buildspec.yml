@@ -3,19 +3,18 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $ap-south-1 | docker login --username AWS --password-stdin $008971679675.dkr.ecr.ap-south-1.amazonaws.com/myecrrepo
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $myecrepo:$latest .
-      - docker tag $IMAGE_NAME:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+      - docker build -t my-app .
+      - docker tag my-app:latest $ECR_REGISTRY/my-app:latest
   post_build:
     commands:
-      - echo Build completed on `date`
       - echo Pushing the Docker image...
-      - docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '[{"name":"%s","imageUri":"%s"}]' $IMAGE_NAME $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG > imagedefinitions.json
+      - docker push $ECR_REGISTRY/my-app:latest
+      - echo Build completed on `date`
 artifacts:
-  files: imagedefinitions.json
+  files:
+    - '**/*'

@@ -1,20 +1,31 @@
 version: 0.2
+
+# Environment variables for maintainability
+env:
+  variables:
+    AWS_REGION: ap-south-1
+    AWS_ACCOUNT_ID: 008971679675
+    IMAGE_REPO_NAME: my-eks
+    IMAGE_TAG: latest
+    CONTAINER_NAME: my-eks
+
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 008971679675.dkr.ecr.ap-south-1.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
   build:
     commands:
       - echo Building the Docker image...
-      - docker build -t my-eks .
-      - docker tag my-eks:latest 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-eks:latest
+      - docker build -t $IMAGE_REPO_NAME .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
   post_build:
     commands:
       - echo Pushing the Docker image to ECR...
-      - docker push 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-eks:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"my-eks-container","imageUri":"%s"}]' 008971679675.dkr.ecr.ap-south-1.amazonaws.com/my-eks:latest > imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
     - imagedefinitions.json
+  discard-paths: yes
